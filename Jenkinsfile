@@ -7,72 +7,104 @@ pipeline {
     }
 
     triggers {
-        pollSCM('H/2 * * * *')
+        pollSCM('H/2 * * * *')  // Prüft alle 2 Minuten auf Änderungen im SCM
     }
-    
+
     environment {
-        GITHUB_REPO = 'https://github.com/atamankina/feedback-app.git'
-        DOCKER_IMAGE = 'galaataman/feedback-app:pipeline-test'
+        GITHUB_REPO = 'https://github.com/Systemixx/feedback-app-frontend.git'
+        DOCKER_IMAGE = 'chrisneidl/feedback-app-frontend:pipeline-test'
         DOCKER_CREDENTIALS_ID = 'dockerhub-token'
     }
-    
-    stages {        
-        stage('Checkout') {           
+
+    stages {
+        stage('Checkout') {
             steps {
                 git url: "${GITHUB_REPO}", branch: 'main'
-            }            
-        }       
-        stage('Docker Build') {   
+            }
+        }
+
+        stage('Install Dependencies') {
             steps {
-                echo 'Building the app...'
+                echo 'Installing frontend dependencies...'
+                container('node') {
+                    sh 'npm install'
+                }
+                echo 'Dependencies installed.'
+            }
+        }
+
+        stage('Linting') {
+            steps {
+                echo 'Running ESLint...'
+                container('node') {
+                    sh 'npm run lint'
+                }
+                echo 'Linting completed.'
+            }
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                echo 'Running unit tests...'
+                container('node') {
+                    sh 'npm test'
+                }
+                echo 'Unit tests completed.'
+            }
+        }
+
+        stage('Build Frontend') {
+            steps {
+                echo 'Building the frontend app...'
+                container('node') {
+                    sh 'npm run build'
+                }
+                echo 'Build successful.'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                echo 'Building Docker image...'
                 container('docker') {
                     sh 'docker build -t $DOCKER_IMAGE .'
                 }
-                echo 'Build successful.'
-            }    
+                echo 'Docker image build successful.'
+            }
         }
+
         stage('Docker Push') {
             steps {
-                echo 'Pushing the image to Docker Hub...'
+                echo 'Pushing Docker image to Docker Hub...'
                 container('docker') {
                     script {
                         docker.withRegistry('', "${DOCKER_CREDENTIALS_ID}") {
                             sh 'docker push $DOCKER_IMAGE'
                         }
-                    }  
+                    }
                 }
-                echo 'Push successful.'
+                echo 'Docker push successful.'
             }
         }
-        stage('Kubernetes Deploy Dependencies') {
+
+        stage('Kubernetes Deploy Frontend') {
             steps {
-                echo 'Deploying to kubernetes cluster...'
+                echo 'Deploying to Kubernetes...'
                 container('kubectl') {
-                    sh 'kubectl apply -f kubernetes/secret.yaml'
-                    sh 'kubectl apply -f kubernetes/configmap.yaml'
-                    sh 'kubectl apply -f kubernetes/database-volume.yaml'
-                    sh 'kubectl apply -f kubernetes/database-deployment.yaml'
-                } 
+                    sh 'kubectl apply -f kubernetes/frontend-deployment.yaml'
+                }
                 echo 'Deployment successful.'
             }
         }
-        stage('Kubernetes Deploy API') {
+
+        stage('E2E Tests') {
             steps {
-                echo 'Deploying to kubernetes cluster...'
-                container('kubectl') {
-                    sh 'kubectl apply -f kubernetes/api-deployment.yaml'
-                } 
-                echo 'Deployment successful.'
-            }
-        }
-        stage('Integration Tests') {
-            steps {
-                echo 'Running integration tests...'
-                container('k6') {
-                    sh 'k6 run --env BASE_URL=http://feedback-app-api-service:3000 ./tests/feedback-api.integration.js'
+                echo 'Running End-to-End tests...'
+                container('node') {
+                    sh 'npm run e2e'
                 }
-                echo 'Integration tests ready.'
+                echo 'E2E tests completed.'
             }
         }
-    }   
+    }
 }
