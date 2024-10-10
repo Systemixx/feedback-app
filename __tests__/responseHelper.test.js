@@ -1,4 +1,4 @@
-import { sendSuccess, sendError } from "../src/utils/responseHelper"; 
+import { sendSuccess, sendError } from "../src/utils/responseHelper";
 
 const mockRes = {
     status: jest.fn().mockReturnThis(),
@@ -16,14 +16,20 @@ describe('Response Helper', () => {
         jest.clearAllMocks();
     });
 
-    it('Sendet eine Erfolg-Antwort mit dem Standard Status Code', () => {
-        sendSuccess(mockRes, mockData)
+    it('should send success response with default message', () => {
+        sendSuccess(mockRes, mockData);
 
         expect(mockRes.status).toHaveBeenCalledWith(200);
         expect(mockRes.json).toHaveBeenCalledWith({
             message: 'Anfrage erfolgreich.',
             data: mockData
         });
+    });
 
+    it('should send error response with custom status code', () => {
+        sendError(mockRes, 'Es gibt einen Fehler in der Anfrage.', 400);
+
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: 'Es gibt einen Fehler in der Anfrage.' });
     });
 });

@@ -25,4 +25,8 @@ const createTable = async () => {
     }
 }
 
-export { pool, createTable };
+const closePool = async () => {
+    await pool.end();
+};
+
+export { pool, createTable, closePool };

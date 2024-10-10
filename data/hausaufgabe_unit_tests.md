@@ -1027,7 +1027,7 @@ pipeline {
                 container('node') {
                     sh '''
                         npm install
-                        npm test
+                        npm test  -- --maxWorkers=50%
                     '''
                 }
                 echo 'Unit tests completed successfully.'

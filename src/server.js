@@ -3,22 +3,25 @@ import cors from 'cors';
 import feedbackRouter from './routes/feedbackRoutes.js';
 import { createTable } from './db.js';
 
-// Creating the express app
+// Erstelle die Express-App
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // PORT aus Umgebungsvariablen nutzen oder Standard auf 3000
 
 // Setup CORS
 app.use(cors());
-// Middleware for parsing JSON
+// Middleware für JSON-Parsing
 app.use(express.json());
 
-// Creating the feedback table
+// Erstelle die Feedback-Tabelle
 createTable();
 
+// Routen verwenden
 app.use('/', feedbackRouter);
 
-// Start the app
-app.listen(PORT, ()=> {
-    console.log(`Server laeuft auf http://localhost:${PORT}`);
+// Starte die App
+const server = app.listen(PORT, () => {
+    console.log(`Server läuft auf http://localhost:${PORT}`);
 });
 
+// Für Tests exportieren
+export default server;
